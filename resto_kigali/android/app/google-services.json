@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "760231479897",
+    "project_id": "resto-kigali",
+    "storage_bucket": "resto-kigali.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:760231479897:android:5d0db861f23c964175bf48",
+        "android_client_info": {
+          "package_name": "com.example.resto_kigali"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDEAYHYnoEil4N4c85yfWJmbqi_UCpDAZY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
