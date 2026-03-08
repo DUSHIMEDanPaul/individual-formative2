@@ -610,13 +610,19 @@ class _ListingCardState extends State<_ListingCard> {
                             width: double.infinity,
                             height: 180,
                             errorBuilder: (context, error, stackTrace) {
-                              return Icon(Icons.restaurant,
-                                  size: 80, color: AppTheme.textMuted);
+                              return AppTheme.categoryPlaceholder(
+                                  widget.listing.category);
                             },
                           ),
                         )
-                      : Icon(Icons.restaurant,
-                          size: 80, color: AppTheme.textMuted),
+                      : ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(12),
+                            topRight: Radius.circular(12),
+                          ),
+                          child: AppTheme.categoryPlaceholder(
+                              widget.listing.category),
+                        ),
                 ),
                 Positioned(
                   top: 8,

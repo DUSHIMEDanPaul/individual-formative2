@@ -88,28 +88,18 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                 child: Image.network(
                   widget.listing.imageUrl,
                   fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: 250,
                   errorBuilder: (context, error, stackTrace) {
-                    return Center(
-                      child: Icon(
-                        Icons.image_not_supported,
-                        size: 80,
-                        color: AppTheme.textMuted,
-                      ),
-                    );
+                    return AppTheme.categoryPlaceholder(
+                        widget.listing.category,
+                        height: 250);
                   },
                 ),
               )
             else
-              Container(
-                width: double.infinity,
-                height: 250,
-                color: AppTheme.cardGrey,
-                child: Icon(
-                  Icons.location_on,
-                  size: 80,
-                  color: AppTheme.textMuted,
-                ),
-              ),
+              AppTheme.categoryPlaceholder(widget.listing.category,
+                  height: 250),
             // Content Section
             Container(
               width: double.infinity,

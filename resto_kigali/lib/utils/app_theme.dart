@@ -101,4 +101,92 @@ class AppTheme {
       ),
     );
   }
+
+  /// Returns a category-specific icon.
+  static IconData categoryIcon(String category) {
+    switch (category) {
+      case 'Restaurant':
+        return Icons.restaurant;
+      case 'Café':
+        return Icons.coffee;
+      case 'Fast Food':
+        return Icons.fastfood;
+      case 'Bakery':
+        return Icons.bakery_dining;
+      case 'Bar':
+        return Icons.local_bar;
+      case 'Buffet':
+        return Icons.lunch_dining;
+      case 'Diner':
+        return Icons.dining;
+      case 'Picnic Area':
+        return Icons.park;
+      case 'Food Stall':
+        return Icons.storefront;
+      case 'Hotel':
+        return Icons.hotel;
+      default:
+        return Icons.restaurant;
+    }
+  }
+
+  /// Returns a category-specific gradient for placeholder backgrounds.
+  static List<Color> categoryGradient(String category) {
+    switch (category) {
+      case 'Restaurant':
+        return const [Color(0xFFFF6B35), Color(0xFFFF8E53)];
+      case 'Café':
+        return const [Color(0xFF6F4E37), Color(0xFF8B6F47)];
+      case 'Fast Food':
+        return const [Color(0xFFE53935), Color(0xFFFF6659)];
+      case 'Bakery':
+        return const [Color(0xFFD4A574), Color(0xFFE8C9A0)];
+      case 'Bar':
+        return const [Color(0xFF7B1FA2), Color(0xFF9C4DCC)];
+      case 'Buffet':
+        return const [Color(0xFF2E7D32), Color(0xFF4CAF50)];
+      case 'Diner':
+        return const [Color(0xFFE65100), Color(0xFFFF8A50)];
+      case 'Picnic Area':
+        return const [Color(0xFF33691E), Color(0xFF689F38)];
+      case 'Food Stall':
+        return const [Color(0xFFF9A825), Color(0xFFFFD54F)];
+      case 'Hotel':
+        return const [Color(0xFF1565C0), Color(0xFF42A5F5)];
+      default:
+        return const [Color(0xFF455A64), Color(0xFF78909C)];
+    }
+  }
+
+  /// Builds a placeholder widget with category-specific icon and gradient.
+  static Widget categoryPlaceholder(String category, {double height = 180}) {
+    final colors = categoryGradient(category);
+    final icon = categoryIcon(category);
+    return Container(
+      width: double.infinity,
+      height: height,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: colors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 56, color: Colors.white.withValues(alpha: 0.9)),
+          const SizedBox(height: 8),
+          Text(
+            category,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
