@@ -104,13 +104,26 @@ class DirectoryScreen extends StatefulWidget {
 
 class _DirectoryScreenState extends State<DirectoryScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _categoryScrollController = ScrollController();
   String? _selectedCategory;
   List<String> _categories = [];
+  bool _showLeftArrow = false;
+  bool _showRightArrow = true;
 
   @override
   void initState() {
     super.initState();
     _loadCategories();
+    _categoryScrollController.addListener(_updateArrows);
+  }
+
+  void _updateArrows() {
+    if (!_categoryScrollController.hasClients) return;
+    final pos = _categoryScrollController.position;
+    setState(() {
+      _showLeftArrow = pos.pixels > 0;
+      _showRightArrow = pos.pixels < pos.maxScrollExtent;
+    });
   }
 
   void _loadCategories() {
@@ -158,6 +171,7 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _categoryScrollController.dispose();
     super.dispose();
   }
 
@@ -232,55 +246,109 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
                 // Category filter chips
                 if (_categories.isNotEmpty)
                   SliverToBoxAdapter(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: FilterChip(
-                              avatar: Icon(Icons.apps,
-                                  size: 18,
-                                  color: _selectedCategory == null
-                                      ? AppTheme.primaryDark
-                                      : Colors.white70),
-                              label: const Text('All'),
-                              selected: _selectedCategory == null,
-                              onSelected: (selected) {
-                                setState(() => _selectedCategory = null);
-                                _searchController.clear();
-                                listingProvider.fetchListings();
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SingleChildScrollView(
+                          controller: _categoryScrollController,
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Row(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: FilterChip(
+                                  avatar: Icon(Icons.apps,
+                                      size: 18,
+                                      color: _selectedCategory == null
+                                          ? AppTheme.primaryDark
+                                          : Colors.white70),
+                                  label: const Text('All'),
+                                  selected: _selectedCategory == null,
+                                  onSelected: (selected) {
+                                    setState(() => _selectedCategory = null);
+                                    _searchController.clear();
+                                    listingProvider.fetchListings();
+                                  },
+                                ),
+                              ),
+                              ..._categories.map((category) {
+                                final isSelected = _selectedCategory == category;
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: FilterChip(
+                                    avatar: Icon(_categoryIcon(category),
+                                        size: 18,
+                                        color: isSelected
+                                            ? AppTheme.primaryDark
+                                            : Colors.white70),
+                                    label: Text(category),
+                                    selected: isSelected,
+                                    onSelected: (selected) {
+                                      setState(() => _selectedCategory = selected ? category : null);
+                                      _searchController.clear();
+                                      if (selected) {
+                                        listingProvider
+                                            .fetchListingsByCategory(category);
+                                      } else {
+                                        listingProvider.fetchListings();
+                                      }
+                                    },
+                                  ),
+                                );
+                              }),
+                            ],
+                          ),
+                        ),
+                        // Left scroll arrow
+                        if (_showLeftArrow)
+                          Positioned(
+                            left: 0,
+                            child: GestureDetector(
+                              onTap: () {
+                                _categoryScrollController.animateTo(
+                                  (_categoryScrollController.offset - 150)
+                                      .clamp(0, _categoryScrollController.position.maxScrollExtent),
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOut,
+                                );
                               },
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.surfaceDark.withValues(alpha: 0.9),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.chevron_left,
+                                    color: AppTheme.accentGold, size: 20),
+                              ),
                             ),
                           ),
-                          ..._categories.map((category) {
-                            final isSelected = _selectedCategory == category;
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: FilterChip(
-                                avatar: Icon(_categoryIcon(category),
-                                    size: 18,
-                                    color: isSelected
-                                        ? AppTheme.primaryDark
-                                        : Colors.white70),
-                                label: Text(category),
-                                selected: isSelected,
-                                onSelected: (selected) {
-                                  setState(() => _selectedCategory = selected ? category : null);
-                                  _searchController.clear();
-                                  if (selected) {
-                                    listingProvider
-                                        .fetchListingsByCategory(category);
-                                  } else {
-                                    listingProvider.fetchListings();
-                                  }
-                                },
+                        // Right scroll arrow
+                        if (_showRightArrow)
+                          Positioned(
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: () {
+                                _categoryScrollController.animateTo(
+                                  (_categoryScrollController.offset + 150)
+                                      .clamp(0, _categoryScrollController.position.maxScrollExtent),
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOut,
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.surfaceDark.withValues(alpha: 0.9),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.chevron_right,
+                                    color: AppTheme.accentGold, size: 20),
                               ),
-                            );
-                          }),
-                        ],
-                      ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
 
