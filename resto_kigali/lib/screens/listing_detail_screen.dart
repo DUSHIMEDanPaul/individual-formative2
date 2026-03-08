@@ -173,11 +173,23 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                 ),
                               ],
                             ),
-                            Text(
-                              '${widget.listing.reviewCount} reviews',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppTheme.textMuted,
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ReviewsScreen(listing: widget.listing),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                '${widget.listing.reviewCount} reviews  ›',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.accentGold,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],

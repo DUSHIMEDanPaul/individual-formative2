@@ -6,6 +6,7 @@ import '../providers/listing_provider.dart';
 import '../utils/app_theme.dart';
 import 'listing_detail_screen.dart';
 import 'map_view_screen.dart';
+import 'reviews_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -741,29 +742,40 @@ class _ListingCardState extends State<_ListingCard> {
                             const SizedBox(height: 4),
                             // Rating and Review Count
                             if (widget.listing.rating > 0)
-                              Row(
-                                children: [
-                                  Row(
-                                    children: List.generate(
-                                      5,
-                                      (index) => Icon(
-                                        index < widget.listing.rating.toInt()
-                                            ? Icons.star
-                                            : Icons.star_border,
-                                        color: AppTheme.accentGold,
-                                        size: 14,
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          ReviewsScreen(listing: widget.listing),
+                                    ),
+                                  );
+                                },
+                                child: Row(
+                                  children: [
+                                    Row(
+                                      children: List.generate(
+                                        5,
+                                        (index) => Icon(
+                                          index < widget.listing.rating.toInt()
+                                              ? Icons.star
+                                              : Icons.star_border,
+                                          color: AppTheme.accentGold,
+                                          size: 14,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${widget.listing.rating.toStringAsFixed(1)} (${widget.listing.reviewCount} reviews)',
-                                    style: const TextStyle(
-                                      color: AppTheme.textMuted,
-                                      fontSize: 12,
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${widget.listing.rating.toStringAsFixed(1)} (${widget.listing.reviewCount} reviews)',
+                                      style: const TextStyle(
+                                        color: AppTheme.accentGold,
+                                        fontSize: 12,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                           ],
                         ),
