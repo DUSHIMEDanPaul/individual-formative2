@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 /// Model class representing a restaurant listing
 class Listing {
   final String id;
@@ -50,7 +52,7 @@ class Listing {
       phoneNumber: data['phoneNumber'] as String,
       website: data['website'] as String?,
       amenities: List<String>.from(data['amenities'] as List? ?? []),
-      createdBy: data['createdBy'] as String,
+      createdBy: (data['createdBy'] as String?) ?? '',
       createdAt: (data['createdAt'] as dynamic)?.toDate() ?? DateTime.now(),
     );
   }
@@ -71,7 +73,7 @@ class Listing {
       'website': website,
       'amenities': amenities,
       'createdBy': createdBy,
-      'createdAt': createdAt,
+      'createdAt': FieldValue.serverTimestamp(),
     };
   }
 
