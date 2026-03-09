@@ -1,46 +1,43 @@
 import 'package:url_launcher/url_launcher.dart';
 
 class LocationService {
-  /// Open Google Maps directions to the specified location
+  /// Open Google Maps with turn-by-turn directions to the specified location.
+  /// Tries the native Google Maps app URI first, then falls back to the web URL.
   static Future<void> launchMapDirections({
     required double latitude,
     required double longitude,
     required String locationName,
   }) async {
-    final String mapsUrl =
-        'https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude';
+    // Native Google Maps app URI (Android & iOS)
+    final Uri nativeUri = Uri.parse(
+        'comgooglemaps://?daddr=$latitude,$longitude&directionsmode=driving');
+    // Web fallback — always works in a browser
+    final Uri webUri = Uri.parse(
+        'https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude');
 
-    if (await canLaunchUrl(Uri.parse(mapsUrl))) {
-      await launchUrl(Uri.parse(mapsUrl),
-          mode: LaunchMode.externalApplication);
+    if (await canLaunchUrl(nativeUri)) {
+      await launchUrl(nativeUri, mode: LaunchMode.externalApplication);
     } else {
-      throw 'Could not launch map directions';
+      await launchUrl(webUri, mode: LaunchMode.externalApplication);
     }
   }
 
-  /// Open location in OpenStreetMap (OSM)
+  /// Open location in Google Maps (no directions)
   static Future<void> openLocationInMaps({
     required double latitude,
     required double longitude,
     required String label,
   }) async {
-    // Use OpenStreetMap instead of Google Maps (no API key needed)
-    final String osmUrl =
-        'https://www.openstreetmap.org/?mlat=$latitude&mlon=$longitude&zoom=15';
-
-    if (await canLaunchUrl(Uri.parse(osmUrl))) {
-      await launchUrl(Uri.parse(osmUrl),
-          mode: LaunchMode.externalApplication);
-    } else {
-      throw 'Could not launch map';
-    }
+    final Uri uri = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude');
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   /// Call a phone number
   static Future<void> callPhoneNumber(String phoneNumber) async {
-    final String tel = 'tel:$phoneNumber';
-    if (await canLaunchUrl(Uri.parse(tel))) {
-      await launchUrl(Uri.parse(tel));
+    final Uri uri = Uri.parse('tel:$phoneNumber');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
     } else {
       throw 'Could not launch call to $phoneNumber';
     }
@@ -51,11 +48,7 @@ class LocationService {
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       url = 'https://$url';
     }
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    } else {
-      throw 'Could not launch website: $url';
-    }
+    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
   /// Send an email
@@ -64,12 +57,12 @@ class LocationService {
     String subject = '',
     String body = '',
   }) async {
-    final String emailUrl =
-        'mailto:$email?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}';
-    if (await canLaunchUrl(Uri.parse(emailUrl))) {
-      await launchUrl(Uri.parse(emailUrl));
+    final Uri uri = Uri.parse(
+        'mailto:$email?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
     } else {
-      throw 'Could not launch email to $email';
+      throw 'Could not launch email to \$email';
     }
   }
 }
