@@ -43,12 +43,25 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   Future<void> _getCurrentLocation() async {
     try {
       setState(() => _isLoading = true);
-      
-      // Check permission
-      final permission = await Geolocator.checkPermission();
+
+      // Check if location services (GPS) are enabled
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Location services are disabled. Please enable GPS.'),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Check and request permission
+      LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
-        final result = await Geolocator.requestPermission();
-        if (result == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Location permission denied')),
@@ -58,23 +71,34 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         }
       }
 
-      // Get current position
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Location permission permanently denied. Enable it in app settings.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Get position — timeLimit is enforced natively by geolocator
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
+        timeLimit: const Duration(seconds: 15),
       );
+
+      if (!mounted) return;
 
       final newLocation = LatLng(position.latitude, position.longitude);
       setState(() => _selectedLocation = newLocation);
-
-      // Animate to location
       _mapController.move(newLocation, 15.0);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Location found')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Location found')),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -85,7 +109,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         );
       }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
