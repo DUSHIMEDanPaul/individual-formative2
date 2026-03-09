@@ -13,7 +13,9 @@ class ListingProvider extends ChangeNotifier {
   List<Listing> _bookmarkedListings = [];
   List<Review> _reviews = [];
   bool _isLoading = false;
+  bool _isLoadingBookmarks = false;
   String? _errorMessage;
+  String? _bookmarksErrorMessage;
 
   // Getters
   List<Listing> get listings => _listings;
@@ -21,7 +23,9 @@ class ListingProvider extends ChangeNotifier {
   List<Listing> get bookmarkedListings => _bookmarkedListings;
   List<Review> get reviews => _reviews;
   bool get isLoading => _isLoading;
+  bool get isLoadingBookmarks => _isLoadingBookmarks;
   String? get errorMessage => _errorMessage;
+  String? get bookmarksErrorMessage => _bookmarksErrorMessage;
 
   /// Fetch all listings from Firestore
   Future<void> fetchListings() async {
@@ -49,6 +53,11 @@ class ListingProvider extends ChangeNotifier {
 
   /// Fetch listings with a specific category
   Future<void> fetchListingsByCategory(String category) async {
+    await fetchListingsByCategories([category]);
+  }
+
+  /// Fetch listings matching any of the given categories
+  Future<void> fetchListingsByCategories(List<String> categories) async {
     try {
       _isLoading = true;
       _errorMessage = null;
@@ -56,7 +65,7 @@ class ListingProvider extends ChangeNotifier {
 
       final QuerySnapshot<Map<String, dynamic>> snapshot = await _firestore
           .collection('listings')
-          .where('category', isEqualTo: category)
+          .where('category', whereIn: categories)
           .get();
 
       _listings = snapshot.docs
@@ -67,7 +76,7 @@ class ListingProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _errorMessage =
-          'Failed to fetch listings for category: ${e.toString()}';
+          'Failed to fetch listings for categories: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
       rethrow;
@@ -190,6 +199,7 @@ class ListingProvider extends ChangeNotifier {
       if (phoneNumber != null) updates['phoneNumber'] = phoneNumber;
       if (website != null) updates['website'] = website;
       if (amenities != null) updates['amenities'] = amenities;
+      updates['updatedAt'] = FieldValue.serverTimestamp();
 
       await _firestore.collection('listings').doc(listingId).update(updates);
 
@@ -338,13 +348,16 @@ class ListingProvider extends ChangeNotifier {
   /// Fetch bookmarked listings for current user
   Future<void> fetchBookmarkedListings() async {
     try {
-      _isLoading = true;
-      _errorMessage = null;
+      _isLoadingBookmarks = true;
+      _bookmarksErrorMessage = null;
       notifyListeners();
 
       final userId = _firebaseAuth.currentUser?.uid;
       if (userId == null) {
-        throw Exception('User not authenticated');
+        _bookmarkedListings = [];
+        _isLoadingBookmarks = false;
+        notifyListeners();
+        return;
       }
 
       final DocumentSnapshot<Map<String, dynamic>> userDoc =
@@ -352,39 +365,42 @@ class ListingProvider extends ChangeNotifier {
 
       if (!userDoc.exists) {
         _bookmarkedListings = [];
-        _isLoading = false;
+        _isLoadingBookmarks = false;
         notifyListeners();
         return;
       }
 
-      final bookmarkedIds =
-          List<String>.from(userDoc['bookmarkedListings'] ?? []);
+      final bookmarkedIds = List<String>.from(
+          (userDoc.data()?['bookmarkedListings'] as List?) ?? []);
 
       if (bookmarkedIds.isEmpty) {
         _bookmarkedListings = [];
-        _isLoading = false;
+        _isLoadingBookmarks = false;
         notifyListeners();
         return;
       }
 
-      // Fetch bookmarked listings
-      final QuerySnapshot<Map<String, dynamic>> snapshot = await _firestore
-          .collection('listings')
-          .where(FieldPath.documentId, whereIn: bookmarkedIds)
-          .get();
+      // Firestore whereIn supports max 30 items — chunk if needed
+      final List<Listing> results = [];
+      for (int i = 0; i < bookmarkedIds.length; i += 30) {
+        final chunk = bookmarkedIds.sublist(
+            i, i + 30 > bookmarkedIds.length ? bookmarkedIds.length : i + 30);
+        final QuerySnapshot<Map<String, dynamic>> snapshot = await _firestore
+            .collection('listings')
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
+        results.addAll(snapshot.docs
+            .map((doc) => Listing.fromFirestore(doc.data(), doc.id)));
+      }
 
-      _bookmarkedListings = snapshot.docs
-          .map((doc) => Listing.fromFirestore(doc.data(), doc.id))
-          .toList();
-
-      _isLoading = false;
+      _bookmarkedListings = results;
+      _isLoadingBookmarks = false;
       notifyListeners();
     } catch (e) {
-      _errorMessage =
+      _bookmarksErrorMessage =
           'Failed to fetch bookmarked listings: ${e.toString()}';
-      _isLoading = false;
+      _isLoadingBookmarks = false;
       notifyListeners();
-      rethrow;
     }
   }
 
@@ -397,21 +413,12 @@ class ListingProvider extends ChangeNotifier {
       }
 
       final userDocRef = _firestore.collection('users').doc(userId);
-      
-      // Check if user document exists
-      final userDoc = await userDocRef.get();
-      if (!userDoc.exists) {
-        // Create user document if it doesn't exist
-        await userDocRef.set({
-          'bookmarkedListings': [listingId],
-          'createdAt': DateTime.now(),
-        });
-      } else {
-        // Update existing user document
-        await userDocRef.update({
-          'bookmarkedListings': FieldValue.arrayUnion([listingId]),
-        });
-      }
+
+      // Use set with merge so the field is always an array union
+      // regardless of whether the document or field already exists
+      await userDocRef.set({
+        'bookmarkedListings': FieldValue.arrayUnion([listingId]),
+      }, SetOptions(merge: true));
 
       // Refresh bookmarked listings
       await fetchBookmarkedListings();
@@ -431,14 +438,10 @@ class ListingProvider extends ChangeNotifier {
       }
 
       final userDocRef = _firestore.collection('users').doc(userId);
-      
-      // Check if user document exists first
-      final userDoc = await userDocRef.get();
-      if (userDoc.exists) {
-        await userDocRef.update({
-          'bookmarkedListings': FieldValue.arrayRemove([listingId]),
-        });
-      }
+
+      await userDocRef.set({
+        'bookmarkedListings': FieldValue.arrayRemove([listingId]),
+      }, SetOptions(merge: true));
 
       // Refresh bookmarked listings
       await fetchBookmarkedListings();
