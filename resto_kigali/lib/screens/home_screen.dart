@@ -105,7 +105,7 @@ class DirectoryScreen extends StatefulWidget {
 class _DirectoryScreenState extends State<DirectoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _categoryScrollController = ScrollController();
-  String? _selectedCategory;
+  final Set<String> _selectedCategories = {};
   List<String> _categories = [];
   bool _showLeftArrow = false;
   bool _showRightArrow = true;
@@ -135,9 +135,13 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
       'Bar',
       'Buffet',
       'Diner',
-      'Picnic Area',
       'Food Stall',
       'Hotel',
+      'Hospital',
+      'Police Station',
+      'Library',
+      'Park',
+      'Tourist Attraction',
     ];
   }
 
@@ -157,12 +161,20 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
         return Icons.lunch_dining;
       case 'Diner':
         return Icons.dining;
-      case 'Picnic Area':
-        return Icons.park;
       case 'Food Stall':
         return Icons.storefront;
       case 'Hotel':
         return Icons.hotel;
+      case 'Hospital':
+        return Icons.local_hospital;
+      case 'Police Station':
+        return Icons.local_police;
+      case 'Library':
+        return Icons.local_library;
+      case 'Park':
+        return Icons.park;
+      case 'Tourist Attraction':
+        return Icons.attractions;
       default:
         return Icons.category;
     }
@@ -220,7 +232,7 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
                                     onPressed: () {
                                       _searchController.clear();
                                       setState(() {
-                                        _selectedCategory = null;
+                                        _selectedCategories.clear();
                                       });
                                       listingProvider.fetchListings();
                                     },
@@ -230,9 +242,9 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
                             setState(() {});
                             if (value.isNotEmpty) {
                               listingProvider.searchListingsByName(value);
-                            } else if (_selectedCategory != null) {
-                              listingProvider
-                                  .fetchListingsByCategory(_selectedCategory!);
+                            } else if (_selectedCategories.isNotEmpty) {
+                              listingProvider.fetchListingsByCategories(
+                                  _selectedCategories.toList());
                             } else {
                               listingProvider.fetchListings();
                             }
@@ -260,20 +272,20 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
                                 child: FilterChip(
                                   avatar: Icon(Icons.apps,
                                       size: 18,
-                                      color: _selectedCategory == null
+                                      color: _selectedCategories.isEmpty
                                           ? AppTheme.primaryDark
                                           : Colors.white70),
                                   label: const Text('All'),
-                                  selected: _selectedCategory == null,
+                                  selected: _selectedCategories.isEmpty,
                                   onSelected: (selected) {
-                                    setState(() => _selectedCategory = null);
+                                    setState(() => _selectedCategories.clear());
                                     _searchController.clear();
                                     listingProvider.fetchListings();
                                   },
                                 ),
                               ),
                               ..._categories.map((category) {
-                                final isSelected = _selectedCategory == category;
+                                final isSelected = _selectedCategories.contains(category);
                                 return Padding(
                                   padding: const EdgeInsets.only(right: 8),
                                   child: FilterChip(
@@ -285,13 +297,19 @@ class _DirectoryScreenState extends State<DirectoryScreen> {
                                     label: Text(category),
                                     selected: isSelected,
                                     onSelected: (selected) {
-                                      setState(() => _selectedCategory = selected ? category : null);
+                                      setState(() {
+                                        if (selected) {
+                                          _selectedCategories.add(category);
+                                        } else {
+                                          _selectedCategories.remove(category);
+                                        }
+                                      });
                                       _searchController.clear();
-                                      if (selected) {
-                                        listingProvider
-                                            .fetchListingsByCategory(category);
-                                      } else {
+                                      if (_selectedCategories.isEmpty) {
                                         listingProvider.fetchListings();
+                                      } else {
+                                        listingProvider.fetchListingsByCategories(
+                                            _selectedCategories.toList());
                                       }
                                     },
                                   ),
@@ -808,44 +826,87 @@ class _ListingCardState extends State<_ListingCard> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            // Rating and Review Count
-                            if (widget.listing.rating > 0)
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          ReviewsScreen(listing: widget.listing),
-                                    ),
-                                  );
-                                },
-                                child: Row(
-                                  children: [
-                                    Row(
-                                      children: List.generate(
-                                        5,
-                                        (index) => Icon(
-                                          index < widget.listing.rating.toInt()
-                                              ? Icons.star
-                                              : Icons.star_border,
-                                          color: AppTheme.accentGold,
-                                          size: 14,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${widget.listing.rating.toStringAsFixed(1)} (${widget.listing.reviewCount} reviews)',
-                                      style: const TextStyle(
+                            // Rating and Review Count — always visible
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ReviewsScreen(listing: widget.listing),
+                                  ),
+                                );
+                              },
+                              child: Row(
+                                children: [
+                                  Row(
+                                    children: List.generate(
+                                      5,
+                                      (index) => Icon(
+                                        widget.listing.rating > 0 &&
+                                                index <
+                                                    widget.listing.rating
+                                                        .round()
+                                            ? Icons.star
+                                            : Icons.star_border,
                                         color: AppTheme.accentGold,
-                                        fontSize: 12,
+                                        size: 14,
                                       ),
                                     ),
-                                  ],
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    widget.listing.rating > 0
+                                        ? '${widget.listing.rating.toStringAsFixed(1)}  ·  ${widget.listing.reviewCount} ${widget.listing.reviewCount == 1 ? 'review' : 'reviews'}'
+                                        : 'No reviews yet',
+                                    style: TextStyle(
+                                      color: widget.listing.rating > 0
+                                          ? AppTheme.accentGold
+                                          : AppTheme.textMuted,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Quick write-review button
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ReviewsScreen(listing: widget.listing),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentGold.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                                color: AppTheme.accentGold.withOpacity(0.5)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.rate_review,
+                                  size: 14, color: AppTheme.accentGold),
+                              SizedBox(width: 4),
+                              Text(
+                                'Review',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppTheme.accentGold,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -915,6 +976,33 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
   Widget build(BuildContext context) {
     return Consumer<ListingProvider>(
       builder: (context, listingProvider, _) {
+        if (listingProvider.isLoadingBookmarks) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (listingProvider.bookmarksErrorMessage != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 64, color: AppTheme.accentRed),
+                const SizedBox(height: 16),
+                Text(
+                  listingProvider.bookmarksErrorMessage!,
+                  style: const TextStyle(
+                      color: AppTheme.textSecondary, fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => listingProvider.fetchBookmarkedListings(),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
         return Column(
           children: [
             // Header
@@ -972,8 +1060,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                     )
                   : ListView.builder(
                       padding: const EdgeInsets.all(16),
-                      itemCount:
-                          listingProvider.bookmarkedListings.length,
+                      itemCount: listingProvider.bookmarkedListings.length,
                       itemBuilder: (context, index) {
                         final listing =
                             listingProvider.bookmarkedListings[index];
