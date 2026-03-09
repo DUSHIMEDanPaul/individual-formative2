@@ -440,6 +440,82 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
+
+                  // Listing metadata
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.cardGrey,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Listing Info',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textDark,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(Icons.person_outline,
+                                size: 16, color: AppTheme.textMuted),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Listed by: ',
+                              style: TextStyle(
+                                  fontSize: 12, color: AppTheme.textMuted),
+                            ),
+                            Expanded(
+                              child: Text(
+                                widget.listing.createdBy,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.textDark,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(Icons.access_time,
+                                size: 16, color: AppTheme.textMuted),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Added: ',
+                              style: TextStyle(
+                                  fontSize: 12, color: AppTheme.textMuted),
+                            ),
+                            Text(
+                              () {
+                                final dt = widget.listing.createdAt.toLocal();
+                                final day = dt.day.toString().padLeft(2, '0');
+                                final month = dt.month.toString().padLeft(2, '0');
+                                final year = dt.year;
+                                final hour = dt.hour.toString().padLeft(2, '0');
+                                final minute = dt.minute.toString().padLeft(2, '0');
+                                return '$day/$month/$year  $hour:$minute';
+                              }(),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.textDark,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
