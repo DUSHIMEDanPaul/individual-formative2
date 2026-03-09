@@ -72,9 +72,13 @@ class _EditListingScreenState extends State<EditListingScreen> {
       'Bar',
       'Buffet',
       'Diner',
-      'Picnic Area',
       'Food Stall',
       'Hotel',
+      'Hospital',
+      'Police Station',
+      'Library',
+      'Park',
+      'Tourist Attraction',
     ];
     
     // Set current listing category as selected

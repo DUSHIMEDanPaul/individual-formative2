@@ -62,9 +62,13 @@ class _AddListingScreenState extends State<AddListingScreen> {
       'Bar',
       'Buffet',
       'Diner',
-      'Picnic Area',
       'Food Stall',
       'Hotel',
+      'Hospital',
+      'Police Station',
+      'Library',
+      'Park',
+      'Tourist Attraction',
     ];
     
     // Set default selected category to first item
