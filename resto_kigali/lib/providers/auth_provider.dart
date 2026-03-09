@@ -24,8 +24,9 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoggedIn => _user != null;
   bool get isEmailVerified => _user?.emailVerified ?? false;
 
-  /// Stream of auth state changes
-  Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
+  /// Stream of auth state changes — userChanges() also fires after reload()
+  /// so emailVerified status is always fresh in AuthWrapper.
+  Stream<User?> get authStateChanges => _firebaseAuth.userChanges();
 
   /// Sign up with email and password
   Future<void> signUp({
@@ -60,6 +61,7 @@ class AuthProvider extends ChangeNotifier {
           'displayName': displayName,
           'phoneNumber': phoneNumber,
           'notificationsEnabled': true,
+          'bookmarkedListings': [],
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         });
@@ -92,7 +94,9 @@ class AuthProvider extends ChangeNotifier {
         password: password,
       );
 
-      _user = userCredential.user;
+      // Reload to get the latest emailVerified status from the server
+      await userCredential.user?.reload();
+      _user = _firebaseAuth.currentUser;
       _userDisplayName = _user?.displayName;
       _userPhoneNumber = _user?.phoneNumber;
 
@@ -189,6 +193,15 @@ class AuthProvider extends ChangeNotifier {
     } on FirebaseAuthException {
       rethrow;
     }
+  }
+
+  /// Reload the Firebase user to pick up the latest emailVerified status.
+  /// After reload, authStateChanges will emit a fresh User object.
+  Future<void> reloadUser() async {
+    await _firebaseAuth.currentUser?.reload();
+    _user = _firebaseAuth.currentUser;
+    _profileLoaded = false; // allow loadUserProfile to re-run after re-verify
+    notifyListeners();
   }
 
   /// Update user email

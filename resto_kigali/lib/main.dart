@@ -93,7 +93,9 @@ class AuthWrapper extends StatelessWidget {
           return const EmailVerificationScreen();
         }
 
-        authProvider.loadUserProfile();
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => authProvider.loadUserProfile(),
+        );
         return const HomeScreen();
       },
     );

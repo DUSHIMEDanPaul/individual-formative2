@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -27,14 +28,35 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleLogin() async {
     if (_formKey.currentState?.validate() ?? false) {
+      setState(() => _errorMessage = null);
       try {
         await Provider.of<AuthProvider>(context, listen: false).signIn(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
-      } on Exception catch (e) {
+      } on FirebaseAuthException catch (e) {
         setState(() {
-          _errorMessage = e.toString();
+          switch (e.code) {
+            case 'user-not-found':
+              _errorMessage = 'No account found for this email.';
+              break;
+            case 'wrong-password':
+            case 'invalid-credential':
+              _errorMessage = 'Incorrect email or password.';
+              break;
+            case 'user-disabled':
+              _errorMessage = 'This account has been disabled.';
+              break;
+            case 'too-many-requests':
+              _errorMessage = 'Too many attempts. Please try again later.';
+              break;
+            default:
+              _errorMessage = e.message ?? 'Login failed. Please try again.';
+          }
+        });
+      } catch (e) {
+        setState(() {
+          _errorMessage = 'An unexpected error occurred. Please try again.';
         });
       }
     }
@@ -62,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Discover Amazing Restaurants',
+                'Discover Amazing Places',
                 style: TextStyle(
                   fontSize: 14,
                   color: AppTheme.textSecondary,

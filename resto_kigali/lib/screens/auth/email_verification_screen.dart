@@ -131,9 +131,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: () {
-                      // Refresh auth state to check if email is verified
-                      authProvider.loadUserProfile();
+                    onPressed: () async {
+                      // Reload Firebase user to pick up latest emailVerified
+                      await authProvider.reloadUser();
                     },
                     child: const Text('Refresh'),
                   ),
