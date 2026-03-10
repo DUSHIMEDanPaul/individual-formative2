@@ -12,6 +12,13 @@ A Flutter mobile application for discovering and managing restaurant listings in
 - **Reviews & Ratings** — Rate and review restaurants with automatic average rating calculation
 - **Settings** — View profile info, toggle notifications, logout
 
+## Known Issues (Intentional Bugs for Assessment)
+
+| # | Location | Bug | Effect |
+|---|----------|-----|--------|
+| 1 | `pubspec.yaml` | `cloud_firestore: 4.17.5` requires `firebase_core ^2.x` but the project declares `firebase_core: ^4.5.0` | Dependency version conflict — `flutter pub get` fails |
+| 2 | `lib/main.dart` | `Firebase.initializeApp()` is called without `await` | `runApp` starts before Firebase finishes initialising, throwing `FirebaseException: No Firebase App '[DEFAULT]' has been created` at runtime |
+
 ## Firebase Setup
 
 1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
